@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monitor de Vibraciones (10ms)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 1rem;
+      background-color: #f7f9fc;
+    }
+    .valor {
+      font-size: 1.2rem;
+    }
+    #alerta {
+      font-weight: bold;
+      color: red;
+    }
+    .grafica-container {
+      height: 200px;
+      margin-bottom: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">📱 Monitor de Vibraciones en Lavadora Doméstica</h2>
+
+    <div class="mb-3">
+      <div class="d-flex justify-content-center mb-1 flex-wrap">
+        <button class="btn btn-success me-2 mb-2" onclick="iniciarMonitoreo()">Iniciar</button>
+        <button class="btn btn-danger me-2 mb-2" onclick="detenerMonitoreo()">Detener</button>
+        <button class="btn btn-secondary mb-2" onclick="reiniciar()">Reiniciar</button>
+      </div>
+      
+      <div class="d-flex justify-content-center mb-1">
+        <button class="btn btn-primary" onclick="descargarCSV()">Descargar CSV</button>
+      </div>
+      
+
+    </div>
+
+    <p class="mb-2">⏱️ Tiempo: <span id="tiempo">0.000</span> segundos</p>
+    <p id="alerta"></p>
+
+    <div class="row mb-3">
+      <div class="col valor">X: <span id="xVal">0.00</span></div>
+      <div class="col valor">Y: <span id="yVal">0.00</span></div>
+      <div class="col valor">Z: <span id="zVal">0.00</span></div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col">📈 Máx: X=<span id="maxX">0.00</span> Y=<span id="maxY">0.00</span> Z=<span id="maxZ">0.00</span></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col">📉 Mín: X=<span id="minX">0.00</span> Y=<span id="minY">0.00</span> Z=<span id="minZ">0.00</span></div>
+    </div>
+    <div class="row mb-3">
+      <div class="col">⚙️ Prom: X=<span id="avgX">0.00</span> Y=<span id="avgY">0.00</span> Z=<span id="avgZ">0.00</span></div>
+    </div>
+    <div class="mb-3">
+      🔍 Nivel de actividad: <strong id="nivel">-</strong>
+    </div>
+
+    <!-- Gráficas separadas para cada eje -->
+    <div class="row">
+      <div class="col-md-4">
+        <h5>Eje X</h5>
+        <div class="grafica-container">
+          <canvas id="graficaX"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h5>Eje Y</h5>
+        <div class="grafica-container">
+          <canvas id="graficaY"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h5>Eje Z</h5>
+        <div class="grafica-container">
+          <canvas id="graficaZ"></canvas>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-warning mt-3" onclick="descargarGraficaCompleta()">Descargar Gráfica Completa</button>
+    <audio id="sonidoAlerta" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  </div>
+  
+  <!-- Script externo -->
+  <script src="/static/script2.js"></script>
+</body>
+</html>
