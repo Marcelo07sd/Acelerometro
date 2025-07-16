@@ -26,39 +26,70 @@ function leerArchivoCSV(input) {
   }
   
 function iniciarAnalisisFrecuencia() {
-    // Verificar si hay datos en datosCSV
-    if (!Array.isArray(datosCSV) || datosCSV.length < 2) {
-      document.getElementById("resultadoFrecuencia").textContent = "⚠️ No hay datos suficientes para analizar.";
-      return;
+  if (!Array.isArray(datosCSV) || datosCSV.length < 2) {
+    document.getElementById("resultadoFrecuencia").textContent = "⚠️ No hay datos suficientes para analizar.";
+    return;
+  }
+
+  const tiempos = [];
+  const modulos = [];
+
+  for (let i = 1; i < datosCSV.length; i++) {
+    const fila = datosCSV[i];
+    const t = parseFloat(fila[0]);
+    const m = parseFloat(fila[4]);
+    if (!isNaN(t) && !isNaN(m)) {
+      tiempos.push(t);
+      modulos.push(m);
     }
-  
-    // Extraer solo columnas Tiempo_s y Modulo
-    const tiempos = [];
-    const modulos = [];
-  
-    for (let i = 1; i < datosCSV.length; i++) {
-      const fila = datosCSV[i]; // ['Tiempo_s', 'X', 'Y', 'Z', 'Modulo']
-      const t = parseFloat(fila[0]); // Tiempo
-      const m = parseFloat(fila[4]); // Módulo
-  
-      if (!isNaN(t) && !isNaN(m)) {
-        tiempos.push(t);
-        modulos.push(m);
+  }
+
+  if (tiempos.length < 20) {
+    document.getElementById("resultadoFrecuencia").textContent = "⚠️ Se necesitan al menos 20 datos para un análisis válido.";
+    return;
+  }
+
+  const intervaloSegundos = 5; // 🕒 Duración de cada intervalo en segundos
+  const tiempoTotal = tiempos[tiempos.length - 1];
+  const nIntervalos = Math.floor(tiempoTotal / intervaloSegundos);
+
+  const resultadosHTML = [];
+
+  for (let i = 0; i < nIntervalos; i++) {
+    const inicio = i * intervaloSegundos;
+    const fin = (i + 1) * intervaloSegundos;
+
+    const tiemposSegmento = [];
+    const modulosSegmento = [];
+
+    for (let j = 0; j < tiempos.length; j++) {
+      if (tiempos[j] >= inicio && tiempos[j] < fin) {
+        tiemposSegmento.push(tiempos[j]);
+        modulosSegmento.push(modulos[j]);
       }
     }
-  
-    // Validar cantidad mínima de datos
-    if (tiempos.length < 20) {
-      document.getElementById("resultadoFrecuencia").textContent = "⚠️ Se necesitan al menos 20 datos para un análisis válido.";
-      return;
+
+    if (tiemposSegmento.length >= 20) {
+      const f = calcularFrecuenciaDominante(tiemposSegmento, modulosSegmento);
+      const diag = generarDiagnosticoTexto(f);
+      resultadosHTML.push(`<li>⏱️ Intervalo ${i + 1}: ${f.toFixed(2)} Hz → ${diag}</li>`);
+    } else {
+      resultadosHTML.push(`<li>⏱️ Intervalo ${i + 1}: ⚠️ Datos insuficientes</li>`);
     }
-  
-    // Calcular frecuencia dominante
-    const frecuencia = calcularFrecuenciaDominante(tiempos, modulos);
-  
-    // Mostrar el diagnóstico en pantalla
-    mostrarDiagnostico(frecuencia);
   }
+
+  // Mostrar lista en div frecuenciasIntervalos
+  document.getElementById("frecuenciasIntervalos").innerHTML = `<ul>${resultadosHTML.join("")}</ul>`;
+
+  // Mostrar diagnóstico general (último intervalo válido o promedio)
+  const ultimasFrecuencias = resultadosHTML.filter(item => item.includes("Hz"));
+  if (ultimasFrecuencias.length > 0) {
+    document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis por intervalos completado.";
+  } else {
+    document.getElementById("resultadoFrecuencia").textContent = "⚠️ No se encontró ninguna frecuencia dominante válida.";
+  }
+}
+
   
 function calcularFrecuenciaDominante(tiempos, valores) {
     const fMin = 5;
