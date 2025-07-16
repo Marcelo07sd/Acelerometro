@@ -50,7 +50,7 @@ function leerArchivoCSV(input) {
     const tiempoTotal = tiempos[tiempos.length - 1];
     const nIntervalos = Math.floor(tiempoTotal / intervaloSegundos);
   
-    const resultadosHTML = [];
+    const frecuenciasValidas = [];
   
     for (let i = 0; i < nIntervalos; i++) {
       const inicio = i * intervaloSegundos;
@@ -68,15 +68,30 @@ function leerArchivoCSV(input) {
   
       if (tiemposSegmento.length >= 20) {
         const f = calcularFrecuenciaDominante(tiemposSegmento, modulosSegmento);
-        const diag = generarDiagnosticoTexto(f);
-        resultadosHTML.push(`<li>⏱️ Intervalo ${i + 1} (${inicio.toFixed(1)}s - ${fin.toFixed(1)}s): ${f.toFixed(2)} Hz → ${diag}</li>`);
-      } else {
-        resultadosHTML.push(`<li>⏱️ Intervalo ${i + 1} (${inicio.toFixed(1)}s - ${fin.toFixed(1)}s): ⚠️ Datos insuficientes</li>`);
+        frecuenciasValidas.push({
+          intervalo: i + 1,
+          inicio: inicio.toFixed(1),
+          fin: fin.toFixed(1),
+          frecuencia: parseFloat(f.toFixed(2))
+        });
       }
     }
   
-    document.getElementById("frecuenciasIntervalos").innerHTML = `<ul>${resultadosHTML.join("")}</ul>`;
-    document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis por intervalos completado.";
+    if (frecuenciasValidas.length === 0) {
+      document.getElementById("resultadoFrecuencia").textContent = "⚠️ No se detectaron frecuencias válidas.";
+      return;
+    }
+  
+    // Calcular promedio
+    const suma = frecuenciasValidas.reduce((acc, obj) => acc + obj.frecuencia, 0);
+    const promedio = parseFloat((suma / frecuenciasValidas.length).toFixed(2));
+  
+    // Guardar en localStorage
+    localStorage.setItem("frecuenciasIntervalos", JSON.stringify(frecuenciasValidas));
+    localStorage.setItem("frecuenciaPromedio", promedio);
+  
+    // Redirigir a la página de resultados
+    window.location.href = "resultados.html";
   }
   
   function calcularFrecuenciaDominante(tiempos, valores) {
@@ -116,13 +131,5 @@ function leerArchivoCSV(input) {
     }
   
     return mejorFrecuencia;
-  }
-  
-  function generarDiagnosticoTexto(frecuencia) {
-    if (frecuencia < 10) return "Lavadora posiblemente no está centrifugando o está vacía.";
-    if (frecuencia < 25) return "Centrifugado suave. Verifica si hay carga suficiente.";
-    if (frecuencia < 40) return "✅ Centrifugado normal.";
-    if (frecuencia < 60) return "⚠️ Vibración elevada. Revisa si la carga está desbalanceada.";
-    return "❌ Vibración excesiva. Posible daño mecánico en el tambor.";
   }
   
