@@ -73,13 +73,23 @@ function reiniciar() {
   alerta.textContent = '';
   nivel.textContent = '-';
   xSpan.textContent = ySpan.textContent = zSpan.textContent = '0.00';
+  
+  // Limpiar gráficas
   [chartX, chartY, chartZ].forEach(chart => {
     chart.data.labels = [];
     chart.data.datasets[0].data = [];
     chart.update();
   });
-  ['maxX','maxY','maxZ','minX','minY','minZ','avgX','avgY','avgZ'].forEach(id => document.getElementById(id).textContent = '0.00');
+
+  // Limpiar estadísticas mostradas
+  ['maxX','maxY','maxZ','minX','minY','minZ','avgX','avgY','avgZ'].forEach(id => {
+    document.getElementById(id).textContent = '0.00';
+  });
+
+  // 🔁 Limpiar también el resultado de frecuencia dominante
+  document.getElementById("resultadoFrecuencia").textContent = '';
 }
+
 
 function descargarCSV() {
   if (datosCSV.length === 0) return alert('No hay datos para descargar');
