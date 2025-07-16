@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultados del Análisis de Frecuencia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 2rem;
+    }
+    .diagnostico {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .frecuencia-item {
+      margin-bottom: 0.5rem;
+    }
+    .grafica-container {
+      margin-top: 2rem;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2 class="text-center mb-4">🔍 Resultados del Análisis de Frecuencia</h2>
+
+    <div id="resumenDiagnostico" class="alert alert-info text-center"></div>
+
+    <h4 class="mt-4">📊 Frecuencias por Intervalo</h4>
+    <ul id="listaFrecuencias" class="list-group"></ul>
+
+    <div class="grafica-container">
+      <h5 class="text-center">Gráfico de Frecuencias</h5>
+      <canvas id="graficoFrecuencias"></canvas>
+    </div>
+
+    <div class="mt-4">
+      <h5>📝 Recomendaciones</h5>
+      <ul>
+        <li>Verifica si la carga está balanceada si se detecta vibración elevada.</li>
+        <li>Revisa el soporte o nivelación de la lavadora.</li>
+        <li>Evita colocar objetos sueltos o metálicos en el tambor.</li>
+        <li>Si la vibración es muy alta (> 50 Hz), consulta un técnico.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const lista = document.getElementById("listaFrecuencias");
+      const resumen = document.getElementById("resumenDiagnostico");
+      const ctx = document.getElementById("graficoFrecuencias").getContext("2d");
+
+      const datos = JSON.parse(localStorage.getItem("frecuenciasIntervalos")) || [];
+      const promedio = parseFloat(localStorage.getItem("frecuenciaPromedio")) || 0;
+
+      if (datos.length === 0) {
+        resumen.classList.replace("alert-info", "alert-danger");
+        resumen.textContent = "❌ No se encontraron resultados para mostrar.";
+        return;
+      }
+
+      // Mostrar resumen
+      if (promedio < 40) {
+        resumen.classList.replace("alert-info", "alert-success");
+        resumen.textContent = `✅ Todo está bien. Frecuencia promedio: ${promedio.toFixed(2)} Hz`;
+      } else {
+        resumen.classList.replace("alert-info", "alert-warning");
+        resumen.textContent = `⚠️ Se detectaron vibraciones inusuales. Frecuencia promedio: ${promedio.toFixed(2)} Hz`;
+      }
+
+      // Mostrar lista de frecuencias
+      datos.forEach((item, i) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item frecuencia-item";
+        li.textContent = `Intervalo ${item.intervalo} (${item.inicio}s - ${item.fin}s): ${item.frecuencia} Hz`;
+        lista.appendChild(li);
+      });
+
+      // Gráfico de frecuencias
+      const labels = datos.map((item, i) => `Int ${item.intervalo}`);
+      const valores = datos.map((item) => item.frecuencia);
+
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Frecuencia (Hz)",
+            data: valores,
+            borderColor: "#007bff",
+            backgroundColor: "rgba(0, 123, 255, 0.2)",
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: "Hz"
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Intervalo"
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
