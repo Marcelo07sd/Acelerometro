@@ -88,6 +88,18 @@ function reiniciar() {
 
   // 🔁 Limpiar también el resultado de frecuencia dominante
   document.getElementById("resultadoFrecuencia").textContent = '';
+  
+  // ✅ Limpiar el campo input de archivo
+  const inputArchivo = document.getElementById("archivoCSV");
+  if (inputArchivo) {
+    inputArchivo.value = null;
+  }
+
+  // ✅ Limpiar localStorage (solo las claves específicas, o todo)
+  localStorage.removeItem('frecuencias');
+  localStorage.removeItem('frecuenciaPromedio');
+  localStorage.removeItem('umbral');
+  // O usar localStorage.clear(); si no guardas más cosas
 }
 
 
