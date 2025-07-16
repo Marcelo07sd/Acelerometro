@@ -90,8 +90,8 @@ function leerArchivoCSV(input) {
     localStorage.setItem("frecuenciasIntervalos", JSON.stringify(frecuenciasValidas));
     localStorage.setItem("frecuenciaPromedio", promedio);
   
-    // Redirigir a la página de resultados
-    window.location.href = "resultados.html";
+    document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado. Puedes ver los resultados.";
+    document.getElementById("btnVerResultados").disabled = false;
   }
   
   function calcularFrecuenciaDominante(tiempos, valores) {
