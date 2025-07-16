@@ -1,3 +1,30 @@
+function leerArchivoCSV(input) {
+    const archivo = input.files[0];
+    if (!archivo) return;
+  
+    const lector = new FileReader();
+    lector.onload = function (e) {
+      const contenido = e.target.result;
+      const lineas = contenido.trim().split("\n");
+      
+      // Convertir el contenido CSV a un arreglo tipo datosCSV
+      const nuevoCSV = [];
+      for (let i = 0; i < lineas.length; i++) {
+        const fila = lineas[i].split(",").map(valor => valor.trim());
+        nuevoCSV.push(fila);
+      }
+  
+      // Guardar en datosCSV
+      datosCSV = nuevoCSV;
+  
+      // Mostrar mensaje y ejecutar análisis directamente
+      document.getElementById("resultadoFrecuencia").textContent = "📥 Archivo cargado correctamente. Calculando...";
+      iniciarAnalisisFrecuencia();
+    };
+  
+    lector.readAsText(archivo);
+  }
+  
 function iniciarAnalisisFrecuencia() {
     // Verificar si hay datos en datosCSV
     if (!Array.isArray(datosCSV) || datosCSV.length < 2) {
