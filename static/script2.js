@@ -88,7 +88,6 @@ function reiniciar() {
 
   // 🔁 Limpiar también el resultado de frecuencia dominante
   document.getElementById("resultadoFrecuencia").textContent = '';
-  document.getElementById("frecuenciasIntervalos").textContent = '';
 }
 
 
