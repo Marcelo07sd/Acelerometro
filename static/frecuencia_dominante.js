@@ -92,6 +92,11 @@ function leerArchivoCSV(input) {
   
     document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado. Puedes ver los resultados.";
     document.getElementById("btnVerResultados").disabled = false;
+
+    function verResultados() {
+      window.location.href = "resultados.html";
+}
+
   }
   
   function calcularFrecuenciaDominante(tiempos, valores) {
