@@ -38,7 +38,7 @@
 
     <div class="d-flex justify-content-between align-items-center mt-4">
       <h4>📊 Frecuencia General
-        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Muestra la frecuencia dominante estimada a lo largo de toda la sesión.">
+        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Muestra la frecuencia dominante y potencia estimadas en cada intervalo de tiempo.">
           ℹ️
         </span>
       </h4>
@@ -59,6 +59,7 @@
         <tr><td>Frecuencia mínima</td><td id="frecuenciaMinima">-</td></tr>
         <tr><td>Frecuencia máxima</td><td id="frecuenciaMaxima">-</td></tr>
         <tr><td>Frecuencia promedio</td><td id="frecuenciaPromedio">-</td></tr>
+        <tr><td>Potencia promedio</td><td id="potenciaPromedio">-</td></tr>
       </tbody>
     </table>
   </div>
@@ -72,6 +73,7 @@
       const minElem = document.getElementById("frecuenciaMinima");
       const maxElem = document.getElementById("frecuenciaMaxima");
       const promElem = document.getElementById("frecuenciaPromedio");
+      const potenciaElem = document.getElementById("potenciaPromedio");
 
       if (datos.length === 0) {
         resumen.className = "alert alert-danger text-center";
@@ -80,61 +82,94 @@
       }
 
       const frecuencias = datos.map(item => parseFloat(item.frecuencia));
-      const labels = datos.map((item, i) => `Intervalo ${item.intervalo}`);
+      const potencias = datos.map(item => parseFloat(item.potencia || 0));
+      const labels = datos.map(item => `Intervalo ${item.intervalo}`);
 
       const min = Math.min(...frecuencias);
       const max = Math.max(...frecuencias);
       const avg = frecuencias.reduce((a, b) => a + b, 0) / frecuencias.length;
+      const avgPot = potencias.reduce((a, b) => a + b, 0) / potencias.length;
 
-      // Actualizar tabla
       minElem.textContent = `${min.toFixed(1)} Hz`;
       maxElem.textContent = `${max.toFixed(1)} Hz`;
       promElem.textContent = `${avg.toFixed(1)} Hz`;
+      potenciaElem.textContent = `${avgPot.toFixed(2)}`;
 
-      // Diagnóstico
+      // Diagnóstico basado en frecuencia y potencia
       let mensaje = "";
       const delta = max - min;
       const estaDentroDelRango = avg >= 40 && avg <= 60;
       const muchaVariacion = delta > 15;
+      const altaPotencia = avgPot > 60;
 
       if (!estaDentroDelRango) {
         mensaje = "⚠️ La frecuencia promedio está fuera del rango esperado (40–60 Hz). Posible mal funcionamiento o carga desequilibrada.";
         resumen.className = "alert alert-danger text-center";
       } else if (muchaVariacion) {
-        mensaje = "⚠️ Aunque la frecuencia promedio es normal, hay mucha variación (mín: " + min + " Hz, máx: " + max + " Hz), lo cual podría indicar vibraciones inestables.";
+        mensaje = `⚠️ Frecuencia promedio estable, pero con alta variación (mín: ${min.toFixed(1)} Hz, máx: ${max.toFixed(1)} Hz).`;
+        resumen.className = "alert alert-warning text-center";
+      } else if (altaPotencia) {
+        mensaje = `⚠️ Frecuencia estable, pero la potencia es elevada (${avgPot.toFixed(2)}). Posibles vibraciones intensas o desgaste mecánico.`;
         resumen.className = "alert alert-warning text-center";
       } else {
-        mensaje = "✅ El comportamiento de la frecuencia durante el centrifugado es estable y dentro del rango esperado.";
+        mensaje = "✅ El comportamiento de la frecuencia y la potencia es estable y dentro del rango esperado.";
         resumen.className = "alert alert-success text-center";
       }
 
       resumen.textContent = mensaje;
 
-      // Gráfico
+      // Gráfico de frecuencia
       const ctx = document.getElementById("graficoFrecuencia").getContext("2d");
       new Chart(ctx, {
         type: "line",
         data: {
           labels: labels,
-          datasets: [{
-            label: "Frecuencia (Hz)",
-            data: frecuencias,
-            fill: false,
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            tension: 0.2,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          }]
+          datasets: [
+            {
+              label: "Frecuencia (Hz)",
+              data: frecuencias,
+              fill: false,
+              borderColor: 'rgb(75, 192, 192)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              tension: 0.2,
+              pointRadius: 3,
+              pointHoverRadius: 5
+            },
+            {
+              label: "Potencia",
+              data: potencias,
+              fill: false,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              tension: 0.2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              yAxisID: 'yPotencia'
+            }
+          ]
         },
         options: {
           responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
           scales: {
             y: {
               beginAtZero: false,
               title: {
                 display: true,
                 text: 'Frecuencia (Hz)'
+              }
+            },
+            yPotencia: {
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Potencia'
+              },
+              grid: {
+                drawOnChartArea: false
               }
             }
           }
@@ -143,15 +178,15 @@
 
       // Descargar CSV
       document.getElementById("descargarCSV").addEventListener("click", () => {
-        let csv = "Intervalo,Frecuencia (Hz)\n";
+        let csv = "Intervalo,Frecuencia (Hz),Potencia\n";
         datos.forEach(d => {
-          csv += `Intervalo ${d.intervalo},${d.frecuencia}\n`;
+          csv += `Intervalo ${d.intervalo},${d.frecuencia},${d.potencia || 0}\n`;
         });
         const blob = new Blob([csv], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "frecuencias.csv";
+        a.download = "frecuencias_y_potencia.csv";
         a.click();
         URL.revokeObjectURL(url);
       });
@@ -164,4 +199,3 @@
   </script>
 </body>
 </html>
-
