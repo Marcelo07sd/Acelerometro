@@ -93,16 +93,21 @@
 
       // Diagnóstico
       let mensaje = "";
-      if (avg < 40) {
-        mensaje = "⚠️ Frecuencia anormalmente baja. Podría indicar fallos o desequilibrios.";
+      const delta = max - min;
+      const estaDentroDelRango = avg >= 40 && avg <= 60;
+      const muchaVariacion = delta > 15;
+
+      if (!estaDentroDelRango) {
+        mensaje = "⚠️ La frecuencia promedio está fuera del rango esperado (40–60 Hz). Posible mal funcionamiento o carga desequilibrada.";
         resumen.className = "alert alert-danger text-center";
-      } else if (avg > 60) {
-        mensaje = "⚠️ Frecuencia anormalmente alta. Posible mal funcionamiento o exceso de carga.";
-        resumen.className = "alert alert-danger text-center";
+      } else if (muchaVariacion) {
+        mensaje = "⚠️ Aunque la frecuencia promedio es normal, hay mucha variación (mín: " + min + " Hz, máx: " + max + " Hz), lo cual podría indicar vibraciones inestables.";
+        resumen.className = "alert alert-warning text-center";
       } else {
-        mensaje = "✅ El comportamiento de la frecuencia durante el centrifugado es normal.";
+        mensaje = "✅ El comportamiento de la frecuencia durante el centrifugado es estable y dentro del rango esperado.";
         resumen.className = "alert alert-success text-center";
       }
+
       resumen.textContent = mensaje;
 
       // Gráfico
