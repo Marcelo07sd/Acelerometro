@@ -37,8 +37,8 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mt-4">
-      <h4>📊 Frecuencia General
-        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Muestra la frecuencia dominante estimada a lo largo de toda la sesión.">
+      <h4>📊 Frecuencia y Potencia Dominante
+        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Se muestra la frecuencia dominante y la potencia asociada por intervalo.">
           ℹ️
         </span>
       </h4>
@@ -59,140 +59,139 @@
         <tr><td>Frecuencia mínima</td><td id="frecuenciaMinima">-</td></tr>
         <tr><td>Frecuencia máxima</td><td id="frecuenciaMaxima">-</td></tr>
         <tr><td>Frecuencia promedio</td><td id="frecuenciaPromedio">-</td></tr>
+        <tr><td>Potencia promedio</td><td id="potenciaPromedio">-</td></tr>
       </tbody>
     </table>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
- <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const datos = JSON.parse(localStorage.getItem("frecuenciasIntervalos")) || [];
-  const frecuenciaPromedio = localStorage.getItem("frecuenciaPromedio");
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const datos = JSON.parse(localStorage.getItem("frecuenciasIntervalos")) || [];
+      const frecuenciaProm = parseFloat(localStorage.getItem("frecuenciaPromedio")) || 0;
+      const potenciaProm = parseFloat(localStorage.getItem("potenciaPromedio")) || 0;
 
-  const resumen = document.getElementById("resumenDiagnostico");
-  const fMinElem = document.getElementById("frecuenciaMinima");
-  const fMaxElem = document.getElementById("frecuenciaMaxima");
-  const fPromElem = document.getElementById("frecuenciaPromedio");
-  const pMinElem = document.getElementById("potenciaMinima");
-  const pMaxElem = document.getElementById("potenciaMaxima");
-  const pPromElem = document.getElementById("potenciaPromedio");
+      const resumen = document.getElementById("resumenDiagnostico");
+      const minElem = document.getElementById("frecuenciaMinima");
+      const maxElem = document.getElementById("frecuenciaMaxima");
+      const promElem = document.getElementById("frecuenciaPromedio");
+      const potPromElem = document.getElementById("potenciaPromedio");
 
-  if (datos.length === 0) {
-    resumen.className = "alert alert-danger text-center";
-    resumen.textContent = "❌ No se encontraron datos para mostrar.";
-    return;
-  }
-
-  const frecuencias = datos.map(item => parseFloat(item.frecuencia));
-  const potencias = datos.map(item => parseFloat(item.potencia));
-  const labels = datos.map(item => `Int. ${item.intervalo} (${item.inicio}-${item.fin}s)`);
-
-  const fMin = Math.min(...frecuencias);
-  const fMax = Math.max(...frecuencias);
-  const fProm = frecuenciaPromedio ? parseFloat(frecuenciaPromedio) :
-                frecuencias.reduce((a, b) => a + b, 0) / frecuencias.length;
-
-  const pMin = Math.min(...potencias);
-  const pMax = Math.max(...potencias);
-  const pProm = potencias.reduce((a, b) => a + b, 0) / potencias.length;
-
-  fMinElem.textContent = `${fMin.toFixed(2)} Hz`;
-  fMaxElem.textContent = `${fMax.toFixed(2)} Hz`;
-  fPromElem.textContent = `${fProm.toFixed(2)} Hz`;
-
-  pMinElem.textContent = `${pMin.toFixed(2)}`;
-  pMaxElem.textContent = `${pMax.toFixed(2)}`;
-  pPromElem.textContent = `${pProm.toFixed(2)}`;
-
-  // Diagnóstico
-  let mensaje = "";
-  const deltaF = fMax - fMin;
-  const deltaP = pMax - pMin;
-  const frecuenciaOK = fProm >= 40 && fProm <= 60;
-  const potenciaOK = pProm > 10;
-
-  if (!frecuenciaOK) {
-    mensaje = "⚠️ La frecuencia promedio está fuera del rango esperado (40–60 Hz). Posible desbalance.";
-    resumen.className = "alert alert-danger text-center";
-  } else if (deltaF > 15) {
-    mensaje = "⚠️ Frecuencia promedio normal, pero con alta variación. Posibles vibraciones inestables.";
-    resumen.className = "alert alert-warning text-center";
-  } else if (!potenciaOK) {
-    mensaje = "⚠️ Potencia muy baja. Revisa si hubo error de sensor o falta de movimiento.";
-    resumen.className = "alert alert-warning text-center";
-  } else {
-    mensaje = "✅ Comportamiento estable. Todo dentro del rango esperado.";
-    resumen.className = "alert alert-success text-center";
-  }
-
-  resumen.textContent = mensaje;
-
-  // Gráfico
-  const ctx = document.getElementById("graficoFrecuencia").getContext("2d");
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Frecuencia (Hz)",
-          data: frecuencias,
-          yAxisID: 'frecuencia',
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          tension: 0.3,
-          pointRadius: 3
-        },
-        {
-          label: "Potencia",
-          data: potencias,
-          yAxisID: 'potencia',
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.3,
-          pointRadius: 3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      stacked: false,
-      scales: {
-        frecuencia: {
-          type: 'linear',
-          position: 'left',
-          title: { display: true, text: 'Frecuencia (Hz)' }
-        },
-        potencia: {
-          type: 'linear',
-          position: 'right',
-          title: { display: true, text: 'Potencia' },
-          grid: { drawOnChartArea: false }
-        }
+      if (datos.length === 0) {
+        resumen.className = "alert alert-danger text-center";
+        resumen.textContent = "❌ No se encontraron datos para mostrar.";
+        return;
       }
-    }
-  });
 
-  // Descargar CSV adaptado
-  document.getElementById("descargarCSV").addEventListener("click", () => {
-    let csv = "Intervalo,Inicio (s),Fin (s),Frecuencia (Hz),Potencia\n";
-    datos.forEach(d => {
-      csv += `${d.intervalo},${d.inicio},${d.fin},${d.frecuencia},${d.potencia}\n`;
+      const frecuencias = datos.map(d => d.frecuencia);
+      const potencias = datos.map(d => d.potencia);
+      const labels = datos.map(d => `Intervalo ${d.intervalo}`);
+
+      const min = Math.min(...frecuencias);
+      const max = Math.max(...frecuencias);
+
+      // Actualizar tabla
+      minElem.textContent = `${min.toFixed(1)} Hz`;
+      maxElem.textContent = `${max.toFixed(1)} Hz`;
+      promElem.textContent = `${frecuenciaProm.toFixed(1)} Hz`;
+      potPromElem.textContent = `${potenciaProm.toFixed(2)}`;
+
+      // Diagnóstico
+      const estaDentroRango = frecuenciaProm >= 40 && frecuenciaProm <= 60;
+      const muchaVariacion = (max - min) > 15;
+      const potenciaBaja = potenciaProm < 1000; // puedes ajustar este umbral
+
+      let mensaje = "";
+
+      if (!estaDentroRango) {
+        mensaje = "⚠️ La frecuencia promedio está fuera del rango esperado (40–60 Hz). Posible mal funcionamiento o carga desequilibrada.";
+        resumen.className = "alert alert-danger text-center";
+      } else if (potenciaBaja) {
+        mensaje = "⚠️ Aunque la frecuencia es normal, la potencia detectada es baja. Podría indicar una falla en la transmisión de movimiento.";
+        resumen.className = "alert alert-warning text-center";
+      } else if (muchaVariacion) {
+        mensaje = `⚠️ La frecuencia varía significativamente (mín: ${min.toFixed(1)} Hz, máx: ${max.toFixed(1)} Hz), lo que puede indicar vibraciones inestables.`;
+        resumen.className = "alert alert-warning text-center";
+      } else {
+        mensaje = "✅ El comportamiento de la frecuencia y potencia durante el centrifugado es estable y dentro del rango esperado.";
+        resumen.className = "alert alert-success text-center";
+      }
+
+      resumen.textContent = mensaje;
+
+      // Gráfico combinado frecuencia y potencia
+      const ctx = document.getElementById("graficoFrecuencia").getContext("2d");
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Frecuencia (Hz)',
+              data: frecuencias,
+              borderColor: 'rgb(75, 192, 192)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              yAxisID: 'y1',
+              tension: 0.2,
+              pointRadius: 3
+            },
+            {
+              label: 'Potencia',
+              data: potencias,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              yAxisID: 'y2',
+              tension: 0.2,
+              pointRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y1: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Frecuencia (Hz)'
+              }
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Potencia'
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+
+      // Descargar CSV con frecuencia y potencia
+      document.getElementById("descargarCSV").addEventListener("click", () => {
+        let csv = "Intervalo,Frecuencia (Hz),Potencia\n";
+        datos.forEach(d => {
+          csv += `Intervalo ${d.intervalo},${d.frecuencia},${d.potencia}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "frecuencia_y_potencia.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Tooltips
+      new bootstrap.Tooltip(document.body, {
+        selector: '[data-bs-toggle="tooltip"]'
+      });
     });
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "frecuencia_y_potencia.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  new bootstrap.Tooltip(document.body, {
-    selector: '[data-bs-toggle="tooltip"]'
-  });
-});
-</script>
+  </script>
 </body>
 </html>
