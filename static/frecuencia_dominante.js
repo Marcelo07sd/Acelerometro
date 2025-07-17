@@ -1,5 +1,3 @@
-let datosCSV = [];
-
 function leerArchivoCSV(input) {
   const archivo = input.files[0];
   if (!archivo) return;
@@ -94,31 +92,23 @@ function iniciarAnalisisFrecuencia() {
     return;
   }
 
-  const suma = frecuenciasValidas.reduce((acc, obj) => acc + obj.frecuencia, 0);
-  const promedio = parseFloat((suma / frecuenciasValidas.length).toFixed(2));
+  const sumaFrecuencias = frecuenciasValidas.reduce((acc, obj) => acc + obj.frecuencia, 0);
+  const promedioFrecuencia = parseFloat((sumaFrecuencias / frecuenciasValidas.length).toFixed(2));
 
-  // Guardar en localStorage
+  const sumaPotencias = frecuenciasValidas.reduce((acc, obj) => acc + obj.potencia, 0);
+  const promedioPotencia = parseFloat((sumaPotencias / frecuenciasValidas.length).toFixed(2));
+
+  // Guardar resultados en localStorage
   localStorage.setItem("frecuenciasIntervalos", JSON.stringify(frecuenciasValidas));
-  localStorage.setItem("frecuenciaPromedio", promedio);
-
-  // Generar y descargar CSV
-  let contenidoCSV = "Intervalo,Inicio (s),Fin (s),Frecuencia (Hz),Potencia\n";
-  frecuenciasValidas.forEach(f => {
-    contenidoCSV += `${f.intervalo},${f.inicio},${f.fin},${f.frecuencia},${f.potencia}\n`;
-  });
-
-  const blob = new Blob([contenidoCSV], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const enlace = document.createElement("a");
-  enlace.href = url;
-  enlace.download = "frecuencia_y_potencia.csv";
-  enlace.click();
-  URL.revokeObjectURL(url);
+  localStorage.setItem("frecuenciaPromedio", promedioFrecuencia);
+  localStorage.setItem("potenciaPromedio", promedioPotencia);
 
   document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado. Puedes ver los resultados.";
-
-  // 🔓 Habilitar el botón de ver resultados
   document.getElementById("btnVerResultados").disabled = false;
+}
+
+function verResultados() {
+  window.location.href = "resultados.html";
 }
 
 function calcularFrecuenciaDominante(tiempos, valores) {
@@ -160,8 +150,4 @@ function calcularFrecuenciaDominante(tiempos, valores) {
   return { frecuencia: mejorFrecuencia, potencia: maxPotencia };
 }
 
-// 👉 Función que redirige al ver resultados
-function verResultados() {
-  window.location.href = "resultados.html";
-}
 
