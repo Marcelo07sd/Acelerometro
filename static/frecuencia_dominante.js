@@ -1,3 +1,5 @@
+let datosCSV = [];
+
 function leerArchivoCSV(input) {
   const archivo = input.files[0];
   if (!archivo) return;
@@ -95,10 +97,11 @@ function iniciarAnalisisFrecuencia() {
   const suma = frecuenciasValidas.reduce((acc, obj) => acc + obj.frecuencia, 0);
   const promedio = parseFloat((suma / frecuenciasValidas.length).toFixed(2));
 
+  // Guardar en localStorage
   localStorage.setItem("frecuenciasIntervalos", JSON.stringify(frecuenciasValidas));
   localStorage.setItem("frecuenciaPromedio", promedio);
 
-  // Generar CSV con frecuencia y potencia
+  // Generar y descargar CSV
   let contenidoCSV = "Intervalo,Inicio (s),Fin (s),Frecuencia (Hz),Potencia\n";
   frecuenciasValidas.forEach(f => {
     contenidoCSV += `${f.intervalo},${f.inicio},${f.fin},${f.frecuencia},${f.potencia}\n`;
@@ -113,6 +116,8 @@ function iniciarAnalisisFrecuencia() {
   URL.revokeObjectURL(url);
 
   document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado. Puedes ver los resultados.";
+
+  // 🔓 Habilitar el botón de ver resultados
   document.getElementById("btnVerResultados").disabled = false;
 }
 
@@ -154,3 +159,9 @@ function calcularFrecuenciaDominante(tiempos, valores) {
 
   return { frecuencia: mejorFrecuencia, potencia: maxPotencia };
 }
+
+// 👉 Función que redirige al ver resultados
+function verResultados() {
+  window.location.href = "resultados.html";
+}
+
