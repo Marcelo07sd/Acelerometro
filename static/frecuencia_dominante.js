@@ -28,7 +28,6 @@ function iniciarAnalisisFrecuencia() {
     return;
   }
 
-  // Obtener los encabezados y buscar los índices de columnas
   const encabezados = datosCSV[0].map(h => h.trim().toLowerCase());
   const indiceTiempo = encabezados.findIndex(h => h.includes("tiempo"));
   const indiceModulo = encabezados.findIndex(h => h.includes("modulo"));
@@ -60,7 +59,7 @@ function iniciarAnalisisFrecuencia() {
   const tiempoTotal = tiempos[tiempos.length - 1];
   const nIntervalos = Math.floor(tiempoTotal / intervaloSegundos);
 
-  const frecuenciasValidas = [];
+  const resultados = [];
 
   for (let i = 0; i < nIntervalos; i++) {
     const inicio = i * intervaloSegundos;
@@ -68,38 +67,87 @@ function iniciarAnalisisFrecuencia() {
 
     const tiemposSegmento = [];
     const modulosSegmento = [];
+    const filasSegmento = [];
 
-    for (let j = 0; j < tiempos.length; j++) {
-      if (tiempos[j] >= inicio && tiempos[j] < fin) {
-        tiemposSegmento.push(tiempos[j]);
-        modulosSegmento.push(modulos[j]);
+    for (let j = 1; j < datosCSV.length; j++) {
+      const t = parseFloat(datosCSV[j][indiceTiempo]);
+      if (t >= inicio && t < fin) {
+        tiemposSegmento.push(t);
+        modulosSegmento.push(parseFloat(datosCSV[j][indiceModulo]));
+        filasSegmento.push(j); // Guardamos el índice para agregar columnas luego
       }
     }
 
     if (tiemposSegmento.length >= 20) {
-      const f = calcularFrecuenciaDominante(tiemposSegmento, modulosSegmento);
-      frecuenciasValidas.push({
+      const { frecuencia, potencia } = calcularFrecuenciaYPotencia(tiemposSegmento, modulosSegmento);
+      resultados.push({
         intervalo: i + 1,
         inicio: inicio.toFixed(1),
         fin: fin.toFixed(1),
-        frecuencia: parseFloat(f.toFixed(2))
+        frecuencia: parseFloat(frecuencia.toFixed(2)),
+        potencia: parseFloat(potencia.toFixed(2))
       });
+
+      // Añadir frecuencia y potencia a cada fila del CSV original en ese segmento
+      for (const idx of filasSegmento) {
+        datosCSV[idx].push(frecuencia.toFixed(2));
+        datosCSV[idx].push(potencia.toFixed(2));
+      }
     }
   }
 
-  if (frecuenciasValidas.length === 0) {
-    document.getElementById("resultadoFrecuencia").textContent = "⚠️ No se detectaron frecuencias válidas.";
-    return;
+  // Agregar encabezados si no estaban
+  if (!encabezados.includes("frecuencia") && !encabezados.includes("potencia")) {
+    datosCSV[0].push("FrecuenciaDominante_Hz");
+    datosCSV[0].push("Potencia");
   }
 
-  const suma = frecuenciasValidas.reduce((acc, obj) => acc + obj.frecuencia, 0);
-  const promedio = parseFloat((suma / frecuenciasValidas.length).toFixed(2));
+  // Guardar en localStorage
+  localStorage.setItem("frecuencia_potencia_segmentos", JSON.stringify(resultados));
 
-  localStorage.setItem("frecuenciasIntervalos", JSON.stringify(frecuenciasValidas));
-  localStorage.setItem("frecuenciaPromedio", promedio);
-
-  document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado. Puedes ver los resultados.";
+  // Mensaje final
+  document.getElementById("resultadoFrecuencia").textContent = "✅ Análisis completado y frecuencia/potencia añadidas.";
   document.getElementById("btnVerResultados").disabled = false;
+}
+
+
+function calcularFrecuenciaYPotencia(tiempos, valores) {
+  const fMin = 5;
+  const fMax = 50;
+  const pasos = 1000;
+  let maxPotencia = 0;
+  let mejorFrecuencia = 0;
+
+  for (let i = 0; i <= pasos; i++) {
+    const f = fMin + (fMax - fMin) * i / pasos;
+    const omega = 2 * Math.PI * f;
+
+    let sumCos = 0, sumSin = 0;
+    let sumCos2 = 0, sumSin2 = 0;
+
+    for (let j = 0; j < tiempos.length; j++) {
+      const t = tiempos[j];
+      const y = valores[j];
+      const wt = omega * t;
+
+      const coswt = Math.cos(wt);
+      const sinwt = Math.sin(wt);
+
+      sumCos += y * coswt;
+      sumSin += y * sinwt;
+      sumCos2 += coswt * coswt;
+      sumSin2 += sinwt * sinwt;
+    }
+
+    const potencia = 0.5 * ((sumCos * sumCos) / sumCos2 + (sumSin * sumSin) / sumSin2);
+
+    if (potencia > maxPotencia) {
+      maxPotencia = potencia;
+      mejorFrecuencia = f;
+    }
+  }
+
+  return { frecuencia: mejorFrecuencia, potencia: maxPotencia };
 }
 
 
