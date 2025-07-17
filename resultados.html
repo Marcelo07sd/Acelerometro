@@ -27,9 +27,7 @@
   <div class="container py-5">
     <h2 class="text-center mb-4">
       🔍 Resultados del Análisis de Frecuencia
-      <span class="tooltip-icon" data-bs-toggle="tooltip" title="Este análisis se basa en los datos de vibración detectados durante el centrifugado.">
-        ℹ️
-      </span>
+      <span class="tooltip-icon" data-bs-toggle="tooltip" title="Este análisis se basa en los datos de vibración detectados durante el centrifugado.">ℹ️</span>
     </h2>
 
     <div id="resumenDiagnostico" class="alert alert-info text-center">
@@ -38,9 +36,7 @@
 
     <div class="d-flex justify-content-between align-items-center mt-4">
       <h4>📊 Frecuencia y Potencia Dominante
-        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Se muestra la frecuencia dominante y la potencia asociada por intervalo.">
-          ℹ️
-        </span>
+        <span class="tooltip-icon" data-bs-toggle="tooltip" title="Se muestra la frecuencia dominante y la potencia asociada por intervalo.">ℹ️</span>
       </h4>
       <button class="btn btn-sm btn-outline-primary" id="descargarCSV">⬇️ Descargar CSV</button>
     </div>
@@ -50,16 +46,15 @@
     <h5 class="mt-5">📋 Resumen del Análisis</h5>
     <table class="table table-bordered table-striped metric-table">
       <thead class="table-light">
-        <tr>
-          <th>Métrica</th>
-          <th>Valor</th>
-        </tr>
+        <tr><th>Métrica</th><th>Valor</th></tr>
       </thead>
       <tbody>
         <tr><td>Frecuencia mínima</td><td id="frecuenciaMinima">-</td></tr>
         <tr><td>Frecuencia máxima</td><td id="frecuenciaMaxima">-</td></tr>
         <tr><td>Frecuencia promedio</td><td id="frecuenciaPromedio">-</td></tr>
         <tr><td>Potencia promedio</td><td id="potenciaPromedio">-</td></tr>
+        <tr><td>Desviación estándar</td><td id="desviacion">-</td></tr>
+        <tr><td>Frecuencias alejadas (±20 Hz)</td><td id="frecuenciasAlejadas">-</td></tr>
       </tbody>
     </table>
   </div>
@@ -67,15 +62,11 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const datos = JSON.parse(localStorage.getItem("frecuenciasIntervalos")) || [];
-      const frecuenciaProm = parseFloat(localStorage.getItem("frecuenciaPromedio")) || 0;
-      const potenciaProm = parseFloat(localStorage.getItem("potenciaPromedio")) || 0;
+      const datos = JSON.parse(localStorage.getItem("frecuenciasIntervalos") || "[]");
+      const frecuenciaProm = parseFloat(localStorage.getItem("frecuenciaPromedio") || 0);
+      const potenciaProm = parseFloat(localStorage.getItem("potenciaPromedio") || 0);
 
       const resumen = document.getElementById("resumenDiagnostico");
-      const minElem = document.getElementById("frecuenciaMinima");
-      const maxElem = document.getElementById("frecuenciaMaxima");
-      const promElem = document.getElementById("frecuenciaPromedio");
-      const potPromElem = document.getElementById("potenciaPromedio");
 
       if (datos.length === 0) {
         resumen.className = "alert alert-danger text-center";
@@ -83,6 +74,7 @@
         return;
       }
 
+      // Extraer datos
       const frecuencias = datos.map(d => d.frecuencia);
       const potencias = datos.map(d => d.potencia);
       const labels = datos.map(d => `Intervalo ${d.intervalo}`);
@@ -90,36 +82,43 @@
       const min = Math.min(...frecuencias);
       const max = Math.max(...frecuencias);
 
-      // Actualizar tabla
-      minElem.textContent = `${min.toFixed(1)} Hz`;
-      maxElem.textContent = `${max.toFixed(1)} Hz`;
-      promElem.textContent = `${frecuenciaProm.toFixed(1)} Hz`;
-      potPromElem.textContent = `${potenciaProm.toFixed(2)}`;
+      // Calcular desviación estándar
+      const desviacion = Math.sqrt(frecuencias.reduce((acc, f) => acc + Math.pow(f - frecuenciaProm, 2), 0) / frecuencias.length);
 
-      // Diagnóstico
+      // Contar frecuencias muy alejadas
+      const alejadas = frecuencias.filter(f => Math.abs(f - frecuenciaProm) > 20).length;
+
+      // Actualizar tabla
+      document.getElementById("frecuenciaMinima").textContent = `${min.toFixed(1)} Hz`;
+      document.getElementById("frecuenciaMaxima").textContent = `${max.toFixed(1)} Hz`;
+      document.getElementById("frecuenciaPromedio").textContent = `${frecuenciaProm.toFixed(1)} Hz`;
+      document.getElementById("potenciaPromedio").textContent = `${potenciaProm.toFixed(2)}`;
+      document.getElementById("desviacion").textContent = `${desviacion.toFixed(2)} Hz`;
+      document.getElementById("frecuenciasAlejadas").textContent = `${alejadas}`;
+
+      // Generar diagnóstico
+      let mensaje = "";
       const estaDentroRango = frecuenciaProm >= 40 && frecuenciaProm <= 60;
       const muchaVariacion = (max - min) > 15;
-      const potenciaBaja = potenciaProm < 40; // puedes ajustar este umbral
-
-      let mensaje = "";
+      const potenciaBaja = potenciaProm < 40;
 
       if (!estaDentroRango) {
-        mensaje = "⚠️ La frecuencia promedio está fuera del rango esperado (40–60 Hz). Posible mal funcionamiento o carga desequilibrada.";
+        mensaje = "⚠️ Frecuencia promedio fuera de rango (40–60 Hz). Posible mal funcionamiento.";
         resumen.className = "alert alert-danger text-center";
       } else if (potenciaBaja) {
-        mensaje = "⚠️ Aunque la frecuencia es normal, la potencia detectada es baja. Podría indicar una falla en la transmisión de movimiento.";
+        mensaje = "⚠️ Potencia promedio baja. Podría indicar desgaste o transmisión débil.";
         resumen.className = "alert alert-warning text-center";
-      } else if (muchaVariacion) {
-        mensaje = `⚠️ La frecuencia varía significativamente (mín: ${min.toFixed(1)} Hz, máx: ${max.toFixed(1)} Hz), lo que puede indicar vibraciones inestables.`;
+      } else if (alejadas > 2) {
+        mensaje = `⚠️ Se detectaron ${alejadas} frecuencias muy alejadas de la media (±20 Hz). Revisa vibraciones irregulares.`;
         resumen.className = "alert alert-warning text-center";
       } else {
-        mensaje = "✅ El comportamiento de la frecuencia y potencia durante el centrifugado es estable y dentro del rango esperado.";
+        mensaje = "✅ El comportamiento de frecuencia y potencia es estable y dentro del rango esperado.";
         resumen.className = "alert alert-success text-center";
       }
 
       resumen.textContent = mensaje;
 
-      // Gráfico combinado frecuencia y potencia
+      // Generar gráfico
       const ctx = document.getElementById("graficoFrecuencia").getContext("2d");
       new Chart(ctx, {
         type: 'line',
@@ -132,7 +131,7 @@
               borderColor: 'rgb(75, 192, 192)',
               backgroundColor: 'rgba(75, 192, 192, 0.2)',
               yAxisID: 'y1',
-              tension: 0.2,
+              tension: 0.3,
               pointRadius: 3
             },
             {
@@ -141,7 +140,7 @@
               borderColor: 'rgb(255, 99, 132)',
               backgroundColor: 'rgba(255, 99, 132, 0.2)',
               yAxisID: 'y2',
-              tension: 0.2,
+              tension: 0.3,
               pointRadius: 3
             }
           ]
@@ -152,27 +151,19 @@
             y1: {
               type: 'linear',
               position: 'left',
-              title: {
-                display: true,
-                text: 'Frecuencia (Hz)'
-              }
+              title: { display: true, text: 'Frecuencia (Hz)' }
             },
             y2: {
               type: 'linear',
               position: 'right',
-              title: {
-                display: true,
-                text: 'Potencia'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
+              title: { display: true, text: 'Potencia' },
+              grid: { drawOnChartArea: false }
             }
           }
         }
       });
 
-      // Descargar CSV con frecuencia y potencia
+      // Descargar CSV
       document.getElementById("descargarCSV").addEventListener("click", () => {
         let csv = "Intervalo,Frecuencia (Hz),Potencia\n";
         datos.forEach(d => {
@@ -187,10 +178,8 @@
         URL.revokeObjectURL(url);
       });
 
-      // Tooltips
-      new bootstrap.Tooltip(document.body, {
-        selector: '[data-bs-toggle="tooltip"]'
-      });
+      // Activar tooltips
+      new bootstrap.Tooltip(document.body, { selector: '[data-bs-toggle="tooltip"]' });
     });
   </script>
 </body>
